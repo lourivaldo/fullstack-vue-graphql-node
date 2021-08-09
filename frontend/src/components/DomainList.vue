@@ -46,6 +46,7 @@
 <script>
 import 'bootstrap/dist/css/bootstrap.css';
 import 'font-awesome/css/font-awesome.css';
+import axios from 'axios';
 
 import AppItemList from './AppItemList.vue';
 
@@ -55,8 +56,8 @@ export default {
     AppItemList,
   },
   data: () => ({
-    prefixes: ['Air', 'Jet', 'Flight'],
-    suffixes: ['Hub', 'Station', 'Mart'],
+    prefixes: [],
+    suffixes: [],
   }),
   methods: {
     addPrefix(prefix) {
@@ -88,6 +89,31 @@ export default {
       }
       return domains;
     },
+  },
+  created() {
+    axios({
+      url: 'http://localhost:4000',
+      method: 'post',
+      data: {
+        query: `
+          {
+            prefixes: items (type: "prefix") {
+              id
+              type
+              description
+            }
+            suffixes: items (type: "suffix") {
+              description
+            }
+          }
+        `,
+      },
+    })
+      .then((response) => {
+        const { prefixes, suffixes } = response.data.data;
+        this.prefixes = prefixes.map((prefix) => prefix.description);
+        this.suffixes = suffixes.map((suffix) => suffix.description);
+      });
   },
 };
 </script>
