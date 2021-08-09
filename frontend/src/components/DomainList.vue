@@ -5,17 +5,19 @@
         <div class="col-md">
           <app-item-list
             title="Prefixos"
-            :items="prefixes"
-            @addItem="addPrefix"
-            @deleteItem="deletePrefix"
+            type="prefix"
+            :items="items.prefix"
+            @addItem="addItem"
+            @deleteItem="deleteItem"
           />
         </div>
         <div class="col-md">
           <app-item-list
             title="Sufixos"
-            :items="suffixes"
-            @addItem="addSuffix"
-            @deleteItem="deleteSuffix"
+            type="suffix"
+            :items="items.suffix"
+            @addItem="addItem"
+            @deleteItem="deleteItem"
           />
         </div>
       </div>
@@ -56,29 +58,88 @@ export default {
     AppItemList,
   },
   data: () => ({
-    prefixes: [],
-    suffixes: [],
+    items: {
+      prefix: [],
+      suffix: [],
+    },
   }),
   methods: {
-    addPrefix(prefix) {
-      this.prefixes.push(prefix);
+    addItem(item) {
+      console.log('item', item);
+      axios({
+        url: 'http://localhost:4000',
+        method: 'post',
+        data: {
+          query: `
+            mutation ($item: ItemInput) {
+              newItem: saveItem(item: $item) {
+                id
+                type
+                description
+              }
+            }
+          `,
+          variables: {
+            item,
+          },
+        },
+      })
+        .then((response) => {
+          const { newItem } = response.data.data;
+          console.log(newItem);
+          this.items[item.type].push(newItem);
+        });
     },
-    addSuffix(suffix) {
-      this.suffixes.push(suffix);
+    deleteItem(item) {
+      axios({
+        url: 'http://localhost:4000',
+        method: 'post',
+        data: {
+          query: `
+            mutation ($id: Int) {
+              deleted: deleteItem(id: $id)
+            }
+          `,
+          variables: {
+            id: item.id,
+          },
+        },
+      })
+        .then(() => {
+          this.getItems(item.type);
+        });
     },
-    deletePrefix(prefix) {
-      this.prefixes.splice(this.prefixes.indexOf(prefix), 1);
-    },
-    deleteSuffix(suffix) {
-      this.suffixes.splice(this.prefixes.indexOf(suffix), 1);
+    getItems(type) {
+      axios({
+        url: 'http://localhost:4000',
+        method: 'post',
+        data: {
+          query: `
+            query ($type: String) {
+              items: items (type: $type) {
+                id
+                type
+                description
+              }
+            }
+          `,
+          variables: {
+            type,
+          },
+        },
+      })
+        .then((response) => {
+          const { items } = response.data.data;
+          this.items[type] = items;
+        });
     },
   },
   computed: {
     domains() {
       const domains = [];
-      for (const prefix of this.prefixes) {
-        for (const suffix of this.suffixes) {
-          const name = prefix + suffix;
+      for (const prefix of this.items.prefix) {
+        for (const suffix of this.items.suffix) {
+          const name = prefix.description + suffix.description;
           const url = name.toLowerCase();
           const checkout = `https://checkout.hostgator.com.br/?a=add&sld=${url}&tld=.com`;
           domains.push({
@@ -91,29 +152,8 @@ export default {
     },
   },
   created() {
-    axios({
-      url: 'http://localhost:4000',
-      method: 'post',
-      data: {
-        query: `
-          {
-            prefixes: items (type: "prefix") {
-              id
-              type
-              description
-            }
-            suffixes: items (type: "suffix") {
-              description
-            }
-          }
-        `,
-      },
-    })
-      .then((response) => {
-        const { prefixes, suffixes } = response.data.data;
-        this.prefixes = prefixes.map((prefix) => prefix.description);
-        this.suffixes = suffixes.map((suffix) => suffix.description);
-      });
+    this.getItems('prefix');
+    this.getItems('suffix');
   },
 };
 </script>

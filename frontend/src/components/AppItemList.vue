@@ -6,9 +6,9 @@
         <ul class="list-group">
           <li class="list-group-item d-flex justify-content-between align-items-center"
               v-for="item in items"
-              :key="item"
+              :key="item.id"
           >
-            <div>{{ item }}</div>
+            <div>{{ item.description }}</div>
             <button class="btn btn-info d-inline-block" @click="deleteItem(item)">
               <span class="fa fa-trash"></span>
             </button>
@@ -17,12 +17,12 @@
         <br>
         <div class="input-group">
           <input class="form-control"
-                 v-model="item" type="text"
+                 v-model="description" type="text"
                  placeholder="Digite o item"
-                 @keyup.enter="addItem(item)"
+                 @keyup.enter="addItem(type, description)"
           />
           <div class="input-group-append">
-            <button class="btn btn-info" @click="addItem(item)">
+            <button class="btn btn-info" @click="addItem(type, description)">
               <span class="fa fa-plus"></span>
             </button>
           </div>
@@ -38,14 +38,15 @@ export default {
   props: {
     items: Array,
     title: String,
+    type: String,
   },
   data: () => ({
-    item: '',
+    description: '',
   }),
   methods: {
-    addItem(item) {
-      this.$emit('addItem', item);
-      this.item = '';
+    addItem(type, description) {
+      this.$emit('addItem', { type, description });
+      this.description = '';
     },
     deleteItem(item) {
       this.$emit('deleteItem', item);
