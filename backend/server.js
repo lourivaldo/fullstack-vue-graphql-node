@@ -2,6 +2,8 @@ const {ApolloServer} = require('apollo-server');
 const {ApolloServerPluginLandingPageGraphQLPlayground} = require('apollo-server-core');
 const dns = require('dns')
 
+const service = require('./service')
+
 const typeDefs = `
     type Item {
         id: Int
@@ -32,15 +34,6 @@ const typeDefs = `
     }
 `;
 
-const items = [
-    {id: 1, type: 'prefix', description: 'Air'},
-    {id: 2, type: 'prefix', description: 'Jet'},
-    {id: 3, type: 'prefix', description: 'Flight'},
-    {id: 4, type: 'suffix', description: 'Hub'},
-    {id: 5, type: 'suffix', description: 'Station'},
-    {id: 6, type: 'suffix', description: 'Mart'},
-];
-
 const isDomainAvailable = function (url) {
     return new Promise((resolve) => {
         resolve(true);
@@ -52,24 +45,24 @@ const isDomainAvailable = function (url) {
 
 const resolvers = {
     Query: {
-        items(_, { type }) {
-            return items.filter(item => item.type === type)
+        async items(_, { type }) {
+            const items = await service.getItemsByType(type)
+            return items
         },
     },
     Mutation: {
-        saveItem(_, { item }) {
+        async saveItem(_, { item }) {
             item.id = Math.floor(Math.random() * 1000);
-            items.push(item);
-            return item;
+            const [newItem] = await service.saveItem(item)
+            return newItem;
         },
-        deleteItem(_, { id }) {
-            const item = items.find(item => item.id === id);
-            if (!item) return false;
-            items.splice(items.indexOf(item), 1);
+        async deleteItem(_, { id }) {
+            await service.deleteItem(id)
             return true;
         },
         async generateDomains() {
             const domains = [];
+            const items = await service.getItems()
             for (const prefix of items.filter(item => item.type === 'prefix')) {
                 for (const suffix of items.filter(item => item.type === 'suffix')) {
                     const name = prefix.description + suffix.description;

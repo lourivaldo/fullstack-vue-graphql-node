@@ -1,0 +1,44 @@
+version: '3'
+
+services:
+  backend:
+    build:
+      context: ./backend
+    entrypoint: dockerize -template ./.docker/.env:.env -wait tcp://postgresql:5432 -timeout 40s ./.docker/entrypoint.sh
+    tty: true
+    restart: always
+    environment:
+      DB_HOST: "postgresql"
+      DB_PORT: "5432"
+      DB_USERNAME: "admin"
+      DB_PASSWORD: "admin"
+      DB_DATABASE: "namegator"
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./backend:/usr/src/app
+    networks:
+      - app-network
+    depends_on:
+      - postgresql
+
+  postgresql:
+    image: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: "namegator"
+      POSTGRES_PASSWORD: "admin"
+      POSTGRES_USER: "admin"
+    networks:
+      - app-network
+    volumes:
+      - ./.docker/postgresql:/docker-entrypoint-initdb.d
+
+volumes:
+  postgresql-volume:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge
