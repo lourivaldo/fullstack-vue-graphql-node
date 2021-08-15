@@ -28,13 +28,24 @@
           <ul class="list-group">
             <li class="list-group-item" v-for="domain in domains" :key="domain.name">
               <div class="row">
-                <div class="col-md">
+                <div class="col-md-6">
                   {{ domain.name }}
                 </div>
-                <div class="col-md">
-                  <a class="btn btn-info pull-right" :href="domain.checkout" target="_blank">
+                <div class="col-md-3">
+                  <span
+                    class="badge"
+                    :class="{'bg-info': domain.available, 'bg-danger': !domain.available}"
+                  >
+                    {{ domain.available ? 'Disponível': 'Não disponível' }}
+                  </span>
+                </div>
+                <div class="col-md-3 d-flex justify-content-end">
+                  <a class="btn btn-info mx-1" :href="domain.checkout" target="_blank">
                     <i class="fa fa-shopping-cart"></i>
                   </a>
+                  <button class="btn btn-info" @click="openDomain(domain)">
+                    <span class="fa fa-search"></span>
+                  </button>
                 </div>
               </div>
             </li>
@@ -48,112 +59,33 @@
 <script>
 import 'bootstrap/dist/css/bootstrap.css';
 import 'font-awesome/css/font-awesome.css';
-import axios from 'axios';
 
+import { mapState, mapActions } from 'vuex';
 import AppItemList from './AppItemList.vue';
 
 export default {
-  name: 'App',
+  name: 'DomainList',
   components: {
     AppItemList,
   },
   data: () => ({
-    items: {
-      prefix: [],
-      suffix: [],
-    },
+
   }),
   methods: {
-    addItem(item) {
-      console.log('item', item);
-      axios({
-        url: 'http://localhost:4000',
-        method: 'post',
-        data: {
-          query: `
-            mutation ($item: ItemInput) {
-              newItem: saveItem(item: $item) {
-                id
-                type
-                description
-              }
-            }
-          `,
-          variables: {
-            item,
-          },
-        },
-      })
-        .then((response) => {
-          const { newItem } = response.data.data;
-          console.log(newItem);
-          this.items[item.type].push(newItem);
-        });
-    },
-    deleteItem(item) {
-      axios({
-        url: 'http://localhost:4000',
-        method: 'post',
-        data: {
-          query: `
-            mutation ($id: Int) {
-              deleted: deleteItem(id: $id)
-            }
-          `,
-          variables: {
-            id: item.id,
-          },
-        },
-      })
-        .then(() => {
-          this.getItems(item.type);
-        });
-    },
-    getItems(type) {
-      axios({
-        url: 'http://localhost:4000',
-        method: 'post',
-        data: {
-          query: `
-            query ($type: String) {
-              items: items (type: $type) {
-                id
-                type
-                description
-              }
-            }
-          `,
-          variables: {
-            type,
-          },
-        },
-      })
-        .then((response) => {
-          const { items } = response.data.data;
-          this.items[type] = items;
-        });
+    ...mapActions([
+      'addItem',
+      'deleteItem',
+      'getItems',
+      'generateDomains',
+    ]),
+    openDomain(domain) {
+      this.$router.push({
+        path: `/domains/${domain.name}`,
+      });
     },
   },
   computed: {
-    domains() {
-      const domains = [];
-      for (const prefix of this.items.prefix) {
-        for (const suffix of this.items.suffix) {
-          const name = prefix.description + suffix.description;
-          const url = name.toLowerCase();
-          const checkout = `https://checkout.hostgator.com.br/?a=add&sld=${url}&tld=.com`;
-          domains.push({
-            name,
-            checkout,
-          });
-        }
-      }
-      return domains;
-    },
-  },
-  created() {
-    this.getItems('prefix');
-    this.getItems('suffix');
+    ...mapState(['items', 'domains']),
   },
 };
 </script>
