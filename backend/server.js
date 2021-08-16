@@ -1,5 +1,4 @@
 const {ApolloServer, gql} = require('apollo-server');
-const {ApolloServerPluginLandingPageGraphQLPlayground} = require('apollo-server-core');
 const dns = require('dns')
 
 const service = require('./service')
@@ -100,8 +99,5 @@ const resolvers = {
 const server = new ApolloServer({
     typeDefs,
     resolvers,
-    plugins: [
-        ApolloServerPluginLandingPageGraphQLPlayground(),
-    ],
 })
 server.listen();
