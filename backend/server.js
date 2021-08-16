@@ -1,10 +1,10 @@
-const {ApolloServer} = require('apollo-server');
+const {ApolloServer, gql} = require('apollo-server');
 const {ApolloServerPluginLandingPageGraphQLPlayground} = require('apollo-server-core');
 const dns = require('dns')
 
 const service = require('./service')
 
-const typeDefs = `
+const typeDefs = gql`
     type Item {
         id: Int
         type: String
